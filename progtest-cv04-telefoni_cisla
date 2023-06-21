@@ -1,0 +1,148 @@
+#ifndef __PROGTEST__
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <algorithm>
+#include <stdexcept>
+#include <vector>
+#include <array>
+#include <cassert>
+using namespace std;
+#endif /* __PROGTEST__ */
+
+class CTimeStamp
+{
+  private:
+  int year, month, day, hour, minute, second;
+  
+  public:
+  CTimeStamp(int tmp_y = 0,int tmp_m = 0,int tmp_d = 0,int tmp_h = 0,int tmp_min = 0, int tmp_s = 0){
+    year = tmp_y;
+    month = tmp_m;
+    day = tmp_d;
+    hour = tmp_h;
+    minute = tmp_min;
+    second = tmp_s;
+  }
+
+  bool bigger_then(CTimeStamp tmp) const{
+    if(year > tmp.year){
+      return true;
+    }
+    if((year == tmp.year) && (month > tmp.month)){
+      return true;
+    }
+    if((year == tmp.year) && (month == tmp.month) && (day > tmp.day)){
+      return true;
+    }
+    if((year == tmp.year) && (month == tmp.month) && (day == tmp.day)&&(hour > tmp.hour)){
+      return true;
+    }
+    if((year == tmp.year) && (month == tmp.month) && (day == tmp.day)&&(hour == tmp.hour)&&(minute > tmp.minute)){
+      return true;
+    }
+    if((year == tmp.year) && (month == tmp.month) && (day == tmp.day)&&(hour == tmp.hour)&&(minute == tmp.minute)&&(second > tmp.second)){
+      return true;
+    }
+    if((year == tmp.year) && (month == tmp.month) && (day == tmp.day)&&(hour == tmp.hour)&&(minute == tmp.minute)&&(second == tmp.second)){
+      return true;
+    }
+    else{
+      return false;
+    }
+
+  }
+  bool skip_time() const{
+    if((year == 0) && (month == 0) && (day == 0)&&(hour == 0) && (minute == 0) && (second == 0)){
+      return true;
+    }
+    return false;
+  }
+
+};
+class CContact
+{
+  public:
+  CTimeStamp time;
+  int number1;
+  int number2;
+
+  CContact(CTimeStamp tmp_time,int number_1 = 0, int number_2 = 0){
+    time = tmp_time;
+    number1 = number_1;
+    number2 = number_2;
+  }
+};
+
+class CEFaceMask
+{
+  vector<CContact> contacts;
+
+  public:
+
+  CEFaceMask & addContact(CContact tmp){
+    contacts.push_back(tmp);
+    return *this;
+  }
+
+  vector<int> listContacts(int searched_number) const{
+
+    vector<int> number_list;
+
+    for(int i = 0; i < int(contacts.size());i++){
+      if((searched_number == contacts[i].number1)&&(find(number_list.begin(),number_list.end(),contacts[i].number2) == number_list.end())&&(searched_number!=contacts[i].number2)){
+          number_list.push_back(contacts[i].number2);
+      }
+      if((searched_number == contacts[i].number2)&&(find(number_list.begin(),number_list.end(),contacts[i].number1) == number_list.end())&&(searched_number!=contacts[i].number1)){
+          number_list.push_back(contacts[i].number1);
+      }
+    }
+
+    return number_list;
+  }
+
+  vector<int> listContacts(int searched_number, CTimeStamp start, CTimeStamp end) const{
+
+    vector<int> number_list;
+
+    for(int i = 0; i < int(contacts.size());i++){
+      if((searched_number == contacts[i].number1)&&(find(number_list.begin(),number_list.end(),contacts[i].number2) == number_list.end())&&(searched_number!=contacts[i].number2)){
+          if(((contacts[i].time).bigger_then(start))&&(end.bigger_then(contacts[i].time))){
+            number_list.push_back(contacts[i].number2);
+          }
+      }
+      if((searched_number == contacts[i].number2)&&(find(number_list.begin(),number_list.end(),contacts[i].number1) == number_list.end())&&(searched_number!=contacts[i].number1)){
+          if(contacts[i].time.bigger_then(start)&&(end.bigger_then(contacts[i].time))){
+          number_list.push_back(contacts[i].number1);
+          }
+      }
+    }
+
+    return number_list;
+  }
+
+
+};
+
+#ifndef __PROGTEST__
+int main ()
+{
+  CEFaceMask test;
+
+  test . addContact ( CContact ( CTimeStamp ( 2021, 1, 10, 12, 40, 10 ), 123456789, 999888777 ) );
+  test . addContact ( CContact ( CTimeStamp ( 2021, 1, 12, 12, 40, 10 ), 123456789, 111222333 ) )
+       . addContact ( CContact ( CTimeStamp ( 2021, 2, 5, 15, 30, 28 ), 999888777, 555000222 ) );
+  test . addContact ( CContact ( CTimeStamp ( 2021, 2, 21, 18, 0, 0 ), 123456789, 999888777 ) );
+  test . addContact ( CContact ( CTimeStamp ( 2021, 1, 5, 18, 0, 0 ), 123456789, 456456456 ) );
+  test . addContact ( CContact ( CTimeStamp ( 2021, 2, 1, 0, 0, 0 ), 123456789, 123456789 ) );
+  assert ( test . listContacts ( 123456789 ) == (vector<int> {999888777, 111222333, 456456456}) );
+  assert ( test . listContacts ( 999888777 ) == (vector<int> {123456789, 555000222}) );
+  assert ( test . listContacts ( 191919191 ) == (vector<int> {}) );
+  assert ( test . listContacts ( 123456789, CTimeStamp ( 2021, 1, 5, 18, 0, 0 ), CTimeStamp ( 2021, 2, 21, 18, 0, 0 ) ) == (vector<int> {999888777, 111222333, 456456456}) );
+  assert ( test . listContacts ( 123456789, CTimeStamp ( 2021, 1, 5, 18, 0, 1 ), CTimeStamp ( 2021, 2, 21, 17, 59, 59 ) ) == (vector<int> {999888777, 111222333}) );
+  assert ( test . listContacts ( 123456789, CTimeStamp ( 2021, 1, 10, 12, 41, 9 ), CTimeStamp ( 2021, 2, 21, 17, 59, 59 ) ) == (vector<int> {111222333}) );
+  return 0;
+}
+#endif /* __PROGTEST__ */
