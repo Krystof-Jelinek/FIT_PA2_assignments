@@ -276,7 +276,7 @@ class CPatchStr
       for(size_t i = 0; i < field.size; i++){
         if(from + 1<= field.at(i).get_used_lenght()){
           CStringPart begin_part = field.at(i);
-          begin_part.begin = from;
+          begin_part.begin += from;
           //pokud zustanu uvnitr jednoho stringu
           if(begin_part.get_used_lenght() >= len){
             size_t difference = begin_part.get_used_lenght() - len;
@@ -819,7 +819,10 @@ int main ()
   assert(stringMatch(res.toStr(),"89ABCDEFGH") == true);
   res = test.subStr(8,12);
   assert(stringMatch(res.toStr(),"89ABCDEFGHIJ") == true);
-
+  test.remove(0,2);
+  res = test.subStr(1,2);
+  assert(stringMatch(res.toStr(),"34") == true);
+  reset(test);
 
   //other tests
   test = CPatchStr();
