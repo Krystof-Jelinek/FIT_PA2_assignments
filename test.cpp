@@ -261,15 +261,37 @@ class CFilter
     // todo
 };
 
+struct sorting_key{
+  int sort_index = -1;
+  bool asceding = true;
+};
+
 class CSort
 {
   public:
-                             CSort                         ();
+                             CSort                         ()
+    {
+      
+    }
     CSort                  & addKey                        ( ESortKey          key,
-                                                             bool              ascending );
+                                                             bool              ascending )
+    {
+      if(keys.size() > 5){
+        return *this;
+      }
+      
+      sorting_key tmp;
+      tmp.asceding = ascending;
+      tmp.sort_index = static_cast<int>(key);
+
+      keys.push_back(tmp);
+      return *this;
+    }
     
+    vector<sorting_key> keys;
+
   private:
-    // todo
+    
 };
 
 class CStudyDept 
@@ -307,9 +329,72 @@ class CStudyDept
 
       return true;
     }
+
+    void create_nameFiltered(set<CStudent, cmpNames> & nameFiltered, const CFilter & filter) const{
+      CStudent nameStudent("", CDate{0,0,0}, 0);
+      for(auto itr = filter.names.begin(); itr != filter.names.end(); itr++){
+        nameStudent.all_names = *itr;
+        auto before_itr = lower_bound(name_set.begin(), name_set.end(), nameStudent,cmpNames());
+
+        if((before_itr == name_set.end()) || (before_itr->all_names != nameStudent.all_names)){
+          return;
+        }
+        while(before_itr != name_set.end() && before_itr->all_names == nameStudent.all_names){
+          nameFiltered.insert(*before_itr);
+          before_itr++;
+        }
+      }
+    }
+
+    void create_enrollDatesFiltered(set<CStudent, cmpEnrollDates> & enrollDatesFiltered, const CFilter & filter)const{
+      CStudent enrollStudent("", CDate{0,0,0}, filter.enrolled_before);
+      auto enrolled_before_itr = lower_bound(enroll_set.begin(), enroll_set.end(), enrollStudent,cmpEnrollDates());
+      enrollStudent.enroll_year = filter.enrolled_after;
+      auto enrolled_after_itr = lower_bound(enroll_set.begin(), enroll_set.end(), enrollStudent, cmpEnrollDates());
+      if((enrolled_after_itr != enroll_set.end()) &&(enrolled_after_itr->enroll_year == filter.enrolled_after)){
+        enrolled_after_itr++;
+      }
+      if((enrolled_after_itr != enrolled_before_itr)&&(filter.enrolled_after < filter.enrolled_before)){
+        enrollDatesFiltered = {enrolled_after_itr, enrolled_before_itr};
+      }
+    }
+
+    void create_birthDatesFiltered(set<CStudent, cmpBirthDates> & birthDatesFiltered, const CFilter & filter) const{
+      CStudent birthstudent("", filter.m_born_before, 0);
+      auto born_before_itr = lower_bound(birth_set.begin(), birth_set.end(), birthstudent,cmpBirthDates());
+      birthstudent.m_birth_date = filter.m_born_after;
+      auto born_after_itr = lower_bound(birth_set.begin(), birth_set.end(), birthstudent, cmpBirthDates());
+      if((born_after_itr != birth_set.end()) && (equalDate(born_after_itr->m_birth_date,filter.m_born_after))){
+        born_after_itr++;
+      }
+      if((born_after_itr != born_before_itr)&&(smallerDate(filter.m_born_after,filter.m_born_before))){
+        birthDatesFiltered = {born_after_itr, born_before_itr};
+      }
+    }
     
+    list<CStudent> create_filtered_list(const CFilter & filter) const{
+      set<CStudent, cmpNames> nameFiltered;
+      set<CStudent, cmpBirthDates> birthDatesFiltered;
+      set<CStudent, cmpEnrollDates> enrollDatesFiltered;
+
+      create_enrollDatesFiltered(enrollDatesFiltered, filter);
+
+      create_birthDatesFiltered(birthDatesFiltered, filter);
+
+      create_nameFiltered(nameFiltered, filter);
+
+
+      list<CStudent> ret(nameFiltered.begin(), nameFiltered.end());
+
+      return ret;
+    }
+
     std::list<CStudent>      search                        ( const CFilter   & flt,
-                                                             const CSort     & sortOpt ) const;
+                                                             const CSort     & sortOpt ) const
+    {
+
+    }
+
     std::set<std::string>    suggest                       ( const std::string & name ) const;
 
     long long int indexing_sequence;
@@ -348,27 +433,15 @@ int main ( void )
   assert ( x . addStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) );
   assert ( x . addStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) == false);
   assert ( x . addStudent ( CStudent ( "AAA AA CC", CDate ( 1900, 1, 1), 2002 ) ) == false);
-  assert ( x . delStudent ( CStudent ( "AAA AA CC", CDate ( 1900, 1, 1), 2002 ) ));
-  assert ( x . delStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) );
-  assert ( x . delStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) == false);
+  
 
   CFilter y;
-  y.bornAfter(CDate{2000,1,1});
-  y.bornAfter(CDate{1900,1,1});
-  y.bornAfter(CDate{2000,1,2});
-  y.bornBefore(CDate{2000,1,2});
-  y.bornBefore(CDate{2000,1,3});
-  y.bornBefore(CDate{1999,1,2});
-  y.enrolledAfter(2000);
   y.enrolledAfter(1999);
-  y.enrolledAfter(1999).enrolledAfter(2001);
-  y.enrolledBefore(2000);
-  y.enrolledBefore(2005);
-  y.enrolledBefore(1900);
+  y.enrolledBefore(2002);
 
-  y.name("James     BoND");
-   y.name("James     BoND JamMEEES BOUaAND");
-
+  x.create_filtered_list(y);
+  
+  
   /*
   CStudyDept x0;
   assert ( x0 . addStudent ( CStudent ( "John Peter Taylor", CDate ( 1983, 7, 13), 2014 ) ) );
