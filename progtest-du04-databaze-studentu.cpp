@@ -46,14 +46,12 @@ class CDate
     int                      m_M;
     int                      m_D;
 };
-
 enum class ESortKey
 {
   NAME,
   BIRTH_DATE,
   ENROLL_YEAR
 };
-
 #endif /* __PROGTEST__ */
 
 using namespace std;
@@ -67,21 +65,22 @@ string toLowercase(const string& str) {
     return result;
 }
 
-vector<string> parseAndStoreNames(const std::string& namesString) {
+string parseAndStoreNames(const std::string& namesString) {
         std::string lowercaseNames = toLowercase(namesString);
         vector<string> ret;
+        size_t length = lowercaseNames.length();
         
         size_t pos = 0;
-        while (pos < lowercaseNames.length()) {
-            while (pos < lowercaseNames.length() && std::isspace(lowercaseNames[pos])) {
+        while (pos < length) {
+            while (pos < length && std::isspace(lowercaseNames[pos])) {
                 ++pos;
             }
-            if (pos == lowercaseNames.length()) {
+            if (pos == length) {
                 break;
             }
 
             size_t endPos = pos;
-            while (endPos < lowercaseNames.length() && !std::isspace(lowercaseNames[endPos])) {
+            while (endPos < length && !std::isspace(lowercaseNames[endPos])) {
                 ++endPos;
             }
 
@@ -91,6 +90,37 @@ vector<string> parseAndStoreNames(const std::string& namesString) {
             pos = endPos;
         }
       sort(ret.begin(), ret.end());
+      string normalized_name;
+      for( string & name : ret){
+        normalized_name += name + " ";
+      }
+      return normalized_name;
+  }
+
+vector<string> parseAndStoreNames_intoVector(const std::string& namesString) {
+        std::string lowercaseNames = toLowercase(namesString);
+        vector<string> ret;
+        size_t length = lowercaseNames.length();
+        
+        size_t pos = 0;
+        while (pos < length) {
+            while (pos < length && std::isspace(lowercaseNames[pos])) {
+                ++pos;
+            }
+            if (pos == length) {
+                break;
+            }
+
+            size_t endPos = pos;
+            while (endPos < length && !std::isspace(lowercaseNames[endPos])) {
+                ++endPos;
+            }
+
+            std::string name = lowercaseNames.substr(pos, endPos - pos);
+            ret.push_back(name + " ");
+
+            pos = endPos;
+        }
       return ret;
   }
 
@@ -102,14 +132,13 @@ bool smallerDate(const CDate & first, const CDate & second){
   return first < second;
 }
 
+
 class CStudent
 {
   public:
-
-  CStudent(){
+    CStudent(){
     original_name = "";
     enroll_year = 0;
-    all_names.clear();
     index = -1;
   } 
 
@@ -123,18 +152,20 @@ class CStudent
 
   void parseAndStoreNames(const std::string& namesString) {
         std::string lowercaseNames = toLowercase(namesString);
+        size_t lenght = lowercaseNames.length();
+        vector<string> all_names;
 
         size_t pos = 0;
-        while (pos < lowercaseNames.length()) {
-            while (pos < lowercaseNames.length() && std::isspace(lowercaseNames[pos])) {
+        while (pos < lenght) {
+            while (pos < lenght && std::isspace(lowercaseNames[pos])) {
                 ++pos;
             }
-            if (pos == lowercaseNames.length()) {
+            if (pos == lenght) {
                 break;
             }
 
             size_t endPos = pos;
-            while (endPos < lowercaseNames.length() && !std::isspace(lowercaseNames[endPos])) {
+            while (endPos < lenght && !std::isspace(lowercaseNames[endPos])) {
                 ++endPos;
             }
 
@@ -144,81 +175,55 @@ class CStudent
             pos = endPos;
         }
       sort(all_names.begin(), all_names.end());
+      for( string & name : all_names){
+        normalized_name += name + " ";
+      }
   }
 
-  bool operator ==(const CStudent & other) const{
-    if((this->original_name == other.original_name)
+    bool                     operator ==                   ( const CStudent  & other ) const{
+      if((this->original_name == other.original_name)
      &&(equalDate(this->m_birth_date, other.m_birth_date))
      &&(this->enroll_year == other.enroll_year)){
       return true;
      }
     return false;
-  }
-  
-  bool operator !=(const CStudent & other) const{
-    return !((*this) == other);
-  }
-  
-  bool  operator < (const CStudent & other) const{
-    if(original_name != other.original_name){
-      return original_name < other.original_name;
+    }
+    bool                     operator !=                   ( const CStudent  & other ) const{
+      return !((*this) == other);
+    }
+
+    bool  operator < (const CStudent & other) const{
+    if(enroll_year != other.enroll_year){
+      return enroll_year < other.enroll_year;
     }
     if(!equalDate(m_birth_date, other.m_birth_date)){
       return smallerDate(m_birth_date, other.m_birth_date);
     }
-    return enroll_year < other.enroll_year;
+    return original_name < other.original_name;
   }
 
 
   string original_name;
+  string normalized_name;
   CDate m_birth_date{0,0,0};
   int enroll_year;
 
-  vector<string> all_names;
   long long int index;
-  
   private:
     // todo
-};
-
-struct cmpNames{
-  bool operator() (const CStudent & s1, const CStudent & s2) const{
-    if(s1.all_names == s2.all_names){
-      return s1 < s2;
-    }
-    return s1.all_names < s2.all_names;
-  }
-};
-
-struct cmpBirthDates{
-  bool operator() (const CStudent & s1, const CStudent & s2) const{
-    if(equalDate(s1.m_birth_date,s2.m_birth_date)){
-      return s1 < s2;
-    }
-    return smallerDate(s1.m_birth_date,s2.m_birth_date);
-  }
-};
-
-struct cmpEnrollDates{
-  bool operator() (const CStudent & s1, const CStudent & s2) const{
-    if(s1.enroll_year == s2.enroll_year){
-      return s1 < s2;
-    }
-    return s1.enroll_year < s2.enroll_year;
-  }
 };
 
 class CFilter 
 {
   public:
-                             CFilter                       ()
+                           CFilter                       ()
     {
       enrolled_before = INT_MAX;
       enrolled_after = INT_MIN;
       names.clear();
     }
     CFilter                & name                          ( const std::string & name ){
-      vector<string> tmp = parseAndStoreNames(name);
+      string tmp = parseAndStoreNames(name);
       names.push_back(tmp);
       return *this;
     }
@@ -255,8 +260,7 @@ class CFilter
     CDate m_born_after{INT_MIN,INT_MIN,INT_MIN};
     int enrolled_before;
     int enrolled_after;
-    vector<vector<string>> names;
-  
+    vector<string> names;
   private:
     // todo
 };
@@ -271,12 +275,12 @@ class CSort
   public:
                              CSort                         ()
     {
-      
+      current = 0;
     }
     CSort                  & addKey                        ( ESortKey          key,
                                                              bool              ascending )
     {
-      if(keys.size() > 5){
+      if(keys.size() >= 3){
         return *this;
       }
       
@@ -289,9 +293,111 @@ class CSort
     }
     
     vector<sorting_key> keys;
+    int current;
 
   private:
     
+};
+
+int compare_by_index(const CStudent & first, const CStudent & second, bool ascending){
+  if(ascending){
+    if(first.index > second.index){return -1;}
+    if(first.index < second.index){return 1;}
+    return 0;
+  }
+  else{
+    if(first.index > second.index){return 1;}
+    if(first.index < second.index){return -1;}
+    return 0;
+  }
+}
+
+int compare_by_enroll(const CStudent & first, const CStudent & second, bool ascending){
+  if(ascending){
+    if(first.enroll_year > second.enroll_year){return -1;}
+    if(first.enroll_year < second.enroll_year){return 1;}
+    return 0;
+  }
+  else{
+    if(first.enroll_year > second.enroll_year){return 1;}
+    if(first.enroll_year < second.enroll_year){return -1;}
+    return 0;
+  }
+}
+
+int compare_by_birth(const CStudent & first, const CStudent & second, bool ascending){
+  if(ascending){
+    if(first.m_birth_date > second.m_birth_date){return -1;}
+    if(first.m_birth_date < second.m_birth_date){return 1;}
+    return 0;
+  }
+  else{
+    if(first.m_birth_date > second.m_birth_date){return 1;}
+    if(first.m_birth_date < second.m_birth_date){return -1;}
+    return 0;
+  }
+}
+
+int compare_by_name(const CStudent & first, const CStudent & second, bool ascending){
+  if(ascending){
+    if(first.original_name > second.original_name){return -1;}
+    if(first.original_name < second.original_name){return 1;}
+    return 0;
+  }
+  else{
+    if(first.original_name > second.original_name){return 1;}
+    if(first.original_name < second.original_name){return -1;}
+    return 0;
+  }
+}
+
+bool ultra_compare_func(const CStudent & first, const CStudent & second, CSort parametrs){
+  int cur = parametrs.current;
+  if(int(parametrs.keys.size()) <= parametrs.current){
+    return compare_by_index(first,second, true) > 0;
+  }
+  if(parametrs.keys[cur].sort_index == 0){
+    int res = compare_by_name(first,second,parametrs.keys[cur].asceding);
+    if(res == 0){
+      CSort tmp;
+      tmp = parametrs;
+      tmp.current++;
+      return ultra_compare_func(first,second,tmp);
+    }
+    return res > 0;
+  }
+  if(parametrs.keys[cur].sort_index == 1){
+    int res = compare_by_birth(first,second,parametrs.keys[cur].asceding);
+    if(res == 0){
+      CSort tmp;
+      tmp = parametrs;
+      tmp.current++;
+      return ultra_compare_func(first,second,tmp);
+    }
+    return res > 0;
+  }
+  if(parametrs.keys[cur].sort_index == 2){
+    int res = compare_by_enroll(first,second,parametrs.keys[cur].asceding);
+    if(res == 0){
+      CSort tmp;
+      tmp = parametrs;
+      tmp.current++;
+      return ultra_compare_func(first,second,tmp);
+    }
+    return res > 0;
+  }
+  throw std::runtime_error("Error in ultracompare function");
+}
+
+class ultra_compare{
+  public:
+  CSort m_csort;
+  ultra_compare(const CSort & in){
+    m_csort = in;
+  }
+  bool operator() (const CStudent & first, const CStudent & second){
+    return ultra_compare_func(first,second,m_csort);
+  }
 };
 
 class CStudyDept 
@@ -301,9 +407,8 @@ class CStudyDept
     {
       indexing_sequence = 0;
     }
-                        
     bool                     addStudent                    ( const CStudent  & x ){
-      if(name_set.find(x) != name_set.end()){
+      if(all_students.find(x) != all_students.end()){
         return false;
       }
 
@@ -311,101 +416,102 @@ class CStudyDept
       in.index = indexing_sequence;
       indexing_sequence++;
 
-      name_set.insert(in);
-      birth_set.insert(in);
-      enroll_set.insert(in);
-
+      all_students.insert(in);
       return true;
     }
-
     bool                     delStudent                    ( const CStudent  & x ){
-      if(name_set.find(x) == name_set.end()){
+      if(all_students.find(x) == all_students.end()){
         return false;
       }
 
-      name_set.erase(x);
-      birth_set.erase(x);
-      enroll_set.erase(x);
-
+      all_students.erase(x);
       return true;
     }
-
-    void create_nameFiltered(set<CStudent, cmpNames> & nameFiltered, const CFilter & filter) const{
-      CStudent nameStudent("", CDate{0,0,0}, 0);
-      for(auto itr = filter.names.begin(); itr != filter.names.end(); itr++){
-        nameStudent.all_names = *itr;
-        auto before_itr = lower_bound(name_set.begin(), name_set.end(), nameStudent,cmpNames());
-
-        if((before_itr == name_set.end()) || (before_itr->all_names != nameStudent.all_names)){
-          return;
-        }
-        while(before_itr != name_set.end() && before_itr->all_names == nameStudent.all_names){
-          nameFiltered.insert(*before_itr);
-          before_itr++;
-        }
-      }
-    }
-
-    void create_enrollDatesFiltered(set<CStudent, cmpEnrollDates> & enrollDatesFiltered, const CFilter & filter)const{
-      CStudent enrollStudent("", CDate{0,0,0}, filter.enrolled_before);
-      auto enrolled_before_itr = lower_bound(enroll_set.begin(), enroll_set.end(), enrollStudent,cmpEnrollDates());
-      enrollStudent.enroll_year = filter.enrolled_after;
-      auto enrolled_after_itr = lower_bound(enroll_set.begin(), enroll_set.end(), enrollStudent, cmpEnrollDates());
-      if((enrolled_after_itr != enroll_set.end()) &&(enrolled_after_itr->enroll_year == filter.enrolled_after)){
-        enrolled_after_itr++;
-      }
-      if((enrolled_after_itr != enrolled_before_itr)&&(filter.enrolled_after < filter.enrolled_before)){
-        enrollDatesFiltered = {enrolled_after_itr, enrolled_before_itr};
-      }
-    }
-
-    void create_birthDatesFiltered(set<CStudent, cmpBirthDates> & birthDatesFiltered, const CFilter & filter) const{
-      CStudent birthstudent("", filter.m_born_before, 0);
-      auto born_before_itr = lower_bound(birth_set.begin(), birth_set.end(), birthstudent,cmpBirthDates());
-      birthstudent.m_birth_date = filter.m_born_after;
-      auto born_after_itr = lower_bound(birth_set.begin(), birth_set.end(), birthstudent, cmpBirthDates());
-      if((born_after_itr != birth_set.end()) && (equalDate(born_after_itr->m_birth_date,filter.m_born_after))){
-        born_after_itr++;
-      }
-      if((born_after_itr != born_before_itr)&&(smallerDate(filter.m_born_after,filter.m_born_before))){
-        birthDatesFiltered = {born_after_itr, born_before_itr};
-      }
-    }
     
-    list<CStudent> create_filtered_list(const CFilter & filter) const{
-      set<CStudent, cmpNames> nameFiltered;
-      set<CStudent, cmpBirthDates> birthDatesFiltered;
-      set<CStudent, cmpEnrollDates> enrollDatesFiltered;
-
-      create_enrollDatesFiltered(enrollDatesFiltered, filter);
-
-      create_birthDatesFiltered(birthDatesFiltered, filter);
-
-      create_nameFiltered(nameFiltered, filter);
-
-
-      list<CStudent> ret(nameFiltered.begin(), nameFiltered.end());
-
-      return ret;
-    }
-
     std::list<CStudent>      search                        ( const CFilter   & flt,
                                                              const CSort     & sortOpt ) const
     {
+      list<CStudent> res;
+      if((flt.enrolled_after >= flt.enrolled_before)||
+         (flt.m_born_after >= flt.m_born_before))
+      {
+        return res;
+      }
+      CStudent enrollStudent("", CDate{0,0,0}, flt.enrolled_before);
+      auto end_itr = lower_bound(all_students.begin(), all_students.end(), enrollStudent);
+      enrollStudent.enroll_year = flt.enrolled_after;
+      auto begin_itr = upper_bound(all_students.begin(), all_students.end(), enrollStudent);
+      while((begin_itr != all_students.end()) &&(begin_itr->enroll_year == flt.enrolled_after)){
+        begin_itr++;
+      }
 
+      if(flt.names.empty() == false){
+        while(begin_itr != end_itr){
+          if((begin_itr->m_birth_date >= flt.m_born_before)||(begin_itr->m_birth_date <= flt.m_born_after)){
+            begin_itr++;
+            continue;
+          }
+          for(const string & name : flt.names){
+            if(begin_itr->normalized_name == name){
+              res.push_back(*begin_itr);
+              break;
+            }
+          }
+          begin_itr++;
+        }
+      }
+      else{
+        while(begin_itr != end_itr){
+          if((begin_itr->m_birth_date >= flt.m_born_before)||(begin_itr->m_birth_date <= flt.m_born_after)){
+            begin_itr++;
+            continue;
+          }
+          res.push_back(*begin_itr);
+          begin_itr++;
+        }
+      }
+      res.sort(ultra_compare(sortOpt));
+      return res;
     }
 
-    std::set<std::string>    suggest                       ( const std::string & name ) const;
+    std::set<std::string>    suggest                       ( const std::string & name ) const{
+      //this should remove duplicates from the string
+      vector<string> searching_names = parseAndStoreNames_intoVector(name);
+      set<string> uniqueElements(searching_names.begin(), searching_names.end());
+      searching_names = vector<string>(uniqueElements.begin(), uniqueElements.end());
 
-    long long int indexing_sequence;
+      set<string> ret;
+      bool flag = false;
 
-    std::set<CStudent,cmpNames> name_set;
-    std::set<CStudent,cmpBirthDates> birth_set;
-    std::set<CStudent,cmpEnrollDates> enroll_set;
+      for(const CStudent & student : all_students){
+        flag = true;
+        for(string & name : searching_names){
+          if(student.normalized_name.find(name) == string::npos){
+            flag = false;
+            break;
+          }
+        }
+        if(flag){
+          ret.insert(student.original_name);
+        }
+      }
+      
+      return ret;
+  }
+  
+  long long int indexing_sequence;
+
+  std::set<CStudent> all_students;
+  
+  private:
+    // todo
 };
 #ifndef __PROGTEST__
+
 int main ( void )
 {
+
+  CStudyDept x0;
   assert ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) == CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) );
   assert ( ! ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) != CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) ) );
   assert ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) != CStudent ( "Peter Peterson", CDate ( 1980, 4, 11), 2010 ) );
@@ -422,28 +528,6 @@ int main ( void )
   assert ( ! ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) == CStudent ( "James Bond", CDate ( 1997, 6, 17), 2016 ) ) );
   assert ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) != CStudent ( "Peter Peterson", CDate ( 1997, 6, 17), 2016 ) );
   assert ( ! ( CStudent ( "James Bond", CDate ( 1980, 4, 11), 2010 ) == CStudent ( "Peter Peterson", CDate ( 1997, 6, 17), 2016 ) ) );
-  
-  CStudent a("CCC     AAA       bbBbbB aAAA Ac", CDate{2000,20,20}, 2000);
-  CStudent b("CCC     AAA       bbBbbB aAAA Acc", CDate{1900,20,20}, 2001);
-  CStudent c("CCC     AAA       bbBbbB aAAA Ac", CDate{1900,20,19}, 2001);
-
-  CStudyDept x;
-  assert ( x . addStudent ( CStudent ( "AAA BB CC", CDate ( 2000, 2, 2), 2000 ) ) );
-  assert ( x . addStudent ( CStudent ( "AAA AA CC", CDate ( 1900, 1, 1), 2002 ) ) );
-  assert ( x . addStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) );
-  assert ( x . addStudent ( CStudent ( "BB BB CC", CDate ( 2000, 1, 2), 1999 ) ) == false);
-  assert ( x . addStudent ( CStudent ( "AAA AA CC", CDate ( 1900, 1, 1), 2002 ) ) == false);
-  
-
-  CFilter y;
-  y.enrolledAfter(1999);
-  y.enrolledBefore(2002);
-
-  x.create_filtered_list(y);
-  
-  
-  /*
-  CStudyDept x0;
   assert ( x0 . addStudent ( CStudent ( "John Peter Taylor", CDate ( 1983, 7, 13), 2014 ) ) );
   assert ( x0 . addStudent ( CStudent ( "John Taylor", CDate ( 1981, 6, 30), 2012 ) ) );
   assert ( x0 . addStudent ( CStudent ( "Peter Taylor", CDate ( 1982, 2, 23), 2011 ) ) );
@@ -454,6 +538,7 @@ int main ( void )
   assert ( x0 . addStudent ( CStudent ( "James Bond", CDate ( 1981, 7, 17), 2013 ) ) );
   assert ( x0 . addStudent ( CStudent ( "James Bond", CDate ( 1981, 7, 16), 2012 ) ) );
   assert ( x0 . addStudent ( CStudent ( "Bond James", CDate ( 1981, 7, 16), 2013 ) ) );
+  x0 . search ( CFilter (), CSort ());
   assert ( x0 . search ( CFilter (), CSort () ) == (std::list<CStudent>
   {
     CStudent ( "John Peter Taylor", CDate ( 1983, 7, 13), 2014 ),
@@ -528,6 +613,7 @@ int main ( void )
   assert ( x0 . search ( CFilter () . name ( "james" ), CSort () . addKey ( ESortKey::NAME, true ) ) == (std::list<CStudent>
   {
   }) );
+  x0.suggest("peter");
   assert ( x0 . suggest ( "peter" ) == (std::set<std::string>
   {
     "John Peter Taylor",
@@ -567,8 +653,6 @@ int main ( void )
     CStudent ( "John Taylor", CDate ( 1981, 6, 30), 2012 )
   }) );
   assert ( ! x0 . delStudent ( CStudent ( "James Bond", CDate ( 1981, 7, 16), 2013 ) ) );
-  */
-  
 
   return EXIT_SUCCESS;
 }
