@@ -15,15 +15,29 @@
 
 using namespace std;
 
+string create_indentation_string(int indentation, vector<int> & connections){
+  string ret;
+  for(int i = 0; i < indentation; i++){
+    if(find(connections.begin(), connections.end(), i) != connections.end()){
+      ret += "|";
+    }
+    else{
+      ret += " ";
+    }
+  }
+  return ret;
+}
+
 class CThing{
   public:
-  virtual string printMe(int indentation) const = 0;
+  virtual string printMe(int indentation, vector<int> & connections, bool last_in_list) const = 0;
 
 };
 
 ostream & operator<<(ostream& os, const CThing* thing) {
+    vector<int> tmp;
     if (thing) {
-        os << thing->printMe(0);
+        os << thing->printMe(0,tmp,false);
     } else {
         os << "nullptr";
     }
@@ -40,8 +54,12 @@ class CCPU : public CThing{
     frequence = f;
   }
 
-  string printMe(int indentation) const override{
-    return "jooo CPU";
+  string printMe(int indentation,vector<int> & connections, bool last_in_list) const override{
+    string str_ind = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      return str_ind + "\\-CPU, " + to_string(cores) + " cores @ " + to_string(frequence) + "MHz\n";
+    }
+    return str_ind + "+-CPU, " + to_string(cores) + " cores @ " + to_string(frequence) + "MHz\n";
   }
 
 };
@@ -54,8 +72,12 @@ class CMemory : public CThing{
     size = s;
   }
 
-  string printMe(int indentation) const override{
-    return "jooo Memory";
+  string printMe(int indentation,vector<int> & connections, bool last_in_list) const override{
+    string str_ind = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      return str_ind + "\\-Memory, " + to_string(size) + " MiB\n";
+    }
+    return str_ind + "+-Memory, " + to_string(size) + " MiB\n";
   }
 };
 
@@ -67,6 +89,15 @@ struct CPartition{
     size = s;
     id = in;
   }
+
+  string printMe(int indentation,vector<int> & connections, bool last_in_list, int number) const{
+    string str_ind = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      return str_ind + "\\-[" + to_string(number) + "]: " + to_string(size) + " GiB, " + id + "\n";
+    }
+    return str_ind + "+-[" + to_string(number) + "]: " + to_string(size) + " GiB, " + id + "\n";
+  }
+
 };
 
 class CDisk : public CThing{
@@ -79,12 +110,42 @@ class CDisk : public CThing{
   vector<CPartition> partitions;
 
   CDisk(string t, int s){
-    type = t;
+    if(t == "MAGNETIC"){
+      type = "HDD";
+    }
+    else{
+      type = t;
+    }
     size = s;
   }
 
-  string printMe(int indentation) const override{
-    return "jooo CDisk";
+  string printMe(int indentation,vector<int> & connections, bool last_in_list) const override{
+    string ret;
+    int counter = 0;
+
+    string string_indentation = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      ret += string_indentation + "\\-" + type + ", " + to_string(size) + " GiB\n";
+    }
+    else{
+      ret += string_indentation + "+-" + type + ", " + to_string(size) + " GiB\n";
+    }
+
+    int loop_counter = 0;
+    vector<int> new_connections = connections;
+    new_connections.push_back(indentation);
+
+    for(const CPartition & i : partitions){
+      if(loop_counter == int(partitions.size() - 1)){
+      ret += i.printMe(indentation + 2,new_connections, true, counter);
+      }
+      else{
+        ret += i.printMe(indentation + 2,new_connections, false, counter);
+      }
+      counter++;
+      loop_counter++;
+    }
+    return ret;
   }
 
   CDisk & addPartition(int size, const string & id){
@@ -94,21 +155,56 @@ class CDisk : public CThing{
 
 };
 
+class CAdress{
+  public:
+  string adress;
+
+  string printMe(int indentation,vector<int> & connections,bool last_in_list) const{
+    string string_indentation = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      return string_indentation + "\\-" + adress + "\n";
+    }
+    else{
+      return string_indentation + "+-" + adress + "\n";
+    }
+  }
+
+};
+
 class CComputer : public CThing{
   public:
   vector<shared_ptr<CThing>> parts;
-  vector<string> addresses;
+  vector<CAdress> addresses;
   string pc_name;
 
   CComputer(const string & in){
     pc_name = in;
   }
 
-  string printMe(int indentation) const override{
+  string printMe(int indentation,vector<int> & connections,bool last_in_list) const override{
     string res;
+    string string_indentation = create_indentation_string(indentation, connections);
+    if(last_in_list){
+      res += string_indentation + "\\-Host: " + pc_name + "\n";
+    }
+    else{
+      res += string_indentation + "+-Host: " + pc_name + "\n";
+    }
+    
+    for(const CAdress & j : addresses){
+      res += j.printMe(indentation +2, connections, false); //TODO tohle se rozbije pokud bude mit pocitac pouze adresy
+    }
+    int counter = 0;
+    vector<int> new_connections = connections;
+    new_connections.push_back(indentation);
+
     for(const shared_ptr<CThing> & i : parts){
-      res += i->printMe(0);
-      res += '\n';
+      if(counter == int(parts.size()) - 1){
+        res += i->printMe(indentation + 2, connections, true);
+        continue;
+      }
+      res += i->printMe(indentation + 2, new_connections, false);
+      counter++;
     }
     return res;
   }
@@ -119,7 +215,9 @@ class CComputer : public CThing{
   }
 
   CComputer & addAddress(const string & in){
-    addresses.push_back(in);
+    CAdress tmp;
+    tmp.adress = in;
+    addresses.push_back(tmp);
     return *this;
   }
 
@@ -150,8 +248,21 @@ class CNetwork : public CThing{
     network_name = in;
   }
 
-  string printMe(int indentation) const override{
-    return "jooo network";
+  string printMe(int indentation,vector<int> & connections,bool last_in_list) const override{
+    string ret;
+    int counter = 0;
+    vector<int> new_connections = connections;
+    new_connections.push_back(indentation);
+
+    for(const CComputer & i : computers){
+      if(counter == int(computers.size()) - 1){
+        ret += i.printMe(indentation, connections, true);
+        continue;
+      }
+      ret += i.printMe(indentation, new_connections, false);
+      counter++;
+    }
+    return ret;
   }
 
   friend ostream & operator << (ostream & ostream, const CNetwork & in){
@@ -187,7 +298,7 @@ std::string toString ( const T_ & x )
 
 int main ()
 {
-
+  /*
   CNetwork net("mojesit");
   CComputer pc("mojepc");
   pc.addComponent(CDisk(CDisk::MAGNETIC, 20));
@@ -200,9 +311,8 @@ int main ()
 
   CDisk disk(CDisk::MAGNETIC, 20);
   cout << &disk << endl;
+  */
 
-
-  /*
   CNetwork n ( "FIT network" );
   n . addComputer (
         CComputer ( "progtest.fit.cvut.cz" ) .
@@ -231,6 +341,10 @@ int main ()
           addComponent ( CCPU ( 4, 2500 ) ) .
           addAddress ( "2001:718:2:2901::238" ) .
           addComponent ( CMemory ( 8000 ) ) );
+  
+  cout << toString ( n );
+
+  /*
   assert ( toString ( n ) ==
     "Network: FIT network\n"
     "+-Host: progtest.fit.cvut.cz\n"
@@ -257,14 +371,19 @@ int main ()
     "  +-2001:718:2:2901::238\n"
     "  +-CPU, 4 cores @ 2500MHz\n"
     "  \\-Memory, 8000 MiB\n" );
+  */
+  /*
   CNetwork x = n;
   auto c = x . findComputer ( "imap.fit.cvut.cz" );
+  string coee = toString(*c);
+  cout << toString ( *c );
   assert ( toString ( *c ) ==
     "Host: imap.fit.cvut.cz\n"
     "+-147.32.232.238\n"
     "+-2001:718:2:2901::238\n"
     "+-CPU, 4 cores @ 2500MHz\n"
     "\\-Memory, 8000 MiB\n" );
+
   c -> addComponent ( CDisk ( CDisk::MAGNETIC, 1000 ) .
          addPartition ( 100, "system" ) .
          addPartition ( 200, "WWW" ) .
