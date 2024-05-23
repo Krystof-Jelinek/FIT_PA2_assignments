@@ -1,0 +1,182 @@
+#ifndef __PROGTEST__
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
+#include <string>
+#include <iostream>
+#include <stdexcept>
+using namespace std;
+#endif /* __PROGTEST__ */
+ 
+template<typename T_>
+struct help1D{
+  T_ * ptr;
+  size_t x;
+  size_t y;
+  size_t max_x;
+  size_t max_y;
+  size_t max_z;
+
+  T_ & operator[](size_t z){
+    if(z >= max_z){
+      throw out_of_range("jaj");
+    }
+    return ptr[z + y*max_z + x*max_y*max_z];
+  } 
+
+};
+
+template<typename T_>
+struct help2D{
+  T_ * ptr;
+  size_t x;
+  size_t max_x;
+  size_t max_y;
+  size_t max_z;
+
+
+  help1D<T_> operator[](size_t y){
+    if(y >= max_y){
+      throw out_of_range("jaj");
+    }
+    help1D<T_> tmp;
+    tmp.max_x = max_x;
+    tmp.max_y = max_y;
+    tmp.max_z = max_z;
+
+    tmp.x = x;
+    tmp.y = y;
+    tmp.ptr = ptr;
+    return tmp;
+  }  
+};
+
+template <typename T_>
+class CMatrix3
+{
+    unsigned x_size = 0;
+    unsigned y_size = 0;
+    unsigned z_size = 0;
+    unsigned size = 0;
+    
+    T_ * table = nullptr;
+ 
+public:
+ 
+    // constructor ( unsigned n1, unsigned n2, unsigned n3 )
+    CMatrix3 (unsigned n1, unsigned n2, unsigned n3){
+      x_size = n1;
+      y_size = n2;
+      z_size = n3;
+      size = n1 * n2 * n3;
+      table = new T_[size];
+    }
+    // destructor
+    ~CMatrix3(){
+      delete[] table;
+    }
+    // copy constructor
+    CMatrix3(const CMatrix3 & in){
+      if(this == &in){
+        return;
+      }
+      if(size > 0){
+        delete[] table;
+      }
+      size = in.size;
+      x_size = in.x_size;
+      y_size = in.y_size;
+      z_size = in.z_size;
+      table = new T_[size];
+
+      for(unsigned i = 0; i < in.size; i++){
+        table[i] = in.table[i];
+      }
+    }
+    // operator =
+    CMatrix3 & operator =(const CMatrix3 & in){
+      if(this == &in){
+        return *this;
+      }
+      if(size > 0){
+        delete[] table;
+      }
+      size = in.size;
+      x_size = in.x_size;
+      y_size = in.y_size;
+      z_size = in.z_size;
+      table = new T_[size];
+
+      for(unsigned i = 0; i < in.size; i++){
+        table[i] = in.table[i];
+      }
+      return *this;
+    }
+    // operator [][][]
+    help2D<T_> operator[](size_t index){
+      if(index >= x_size){
+        throw out_of_range("jaj");
+      }
+      help2D<T_> tmp;
+      tmp.max_x = x_size;
+      tmp.max_y = y_size;
+      tmp.max_z = z_size;
+      tmp.x = index;
+      tmp.ptr = table;
+      return tmp;
+    }
+    // operator +
+    // operator ==
+};
+ 
+#ifndef __PROGTEST__
+int main ( void )
+{
+    CMatrix3<int> m ( 3, 4, 5 );
+    m[0][0][0] = 128;
+    m[2][3][1] = 7;
+    assert ( m[0][0][0] == 128 );
+    assert ( m[2][3][1] == 7 );
+ 
+    m[1][1][1] = m[0][0][0] + m[2][3][1];
+    m[2][3][4] = 135;
+    assert ( m[1][1][1] == m[2][3][4] );
+ 
+    CMatrix3<int> copy ( m );
+    try { copy[4][1][2]; assert ( "Missing exception for access i0 = 4, limit = 2" == nullptr ); }
+    catch ( out_of_range & e ) { }
+    catch ( ... ) { assert ( "Incorrect exception thrown" == nullptr ); }
+    try { copy[1][4][2]; assert ( "Missing exception for access i1 = 4, limit = 3" == nullptr ); }
+    catch ( out_of_range & e ) { }
+    catch ( ... ) { assert ( "Incorrect exception thrown" == nullptr ); }
+    try { copy[2][1][6]; assert ( "Missing exception for access i2 = 6, limit = 4" == nullptr ); }
+    catch ( out_of_range & e ) { }
+    catch ( ... ) { assert ( "Incorrect exception thrown" == nullptr ); }
+ 
+    copy[2][3][1] = 42;
+    assert ( m[2][3][1] == 7 );
+    assert ( copy[2][3][1] == 42 );
+ 
+    CMatrix3<int> n ( 2, 2, 2 );
+    n[0][1][0] = 56;
+    n[1][0][1] = 42;
+    m = n;
+    n[0][1][0] = 0;
+    assert ( m[0][1][0] == 56 );
+    try { m[2][1][0]; assert ( "Missing exception for access i0 = 2, limit = 2" == nullptr ); }
+    catch ( out_of_range & e ) { }
+    catch ( ... ) { assert ( "Incorrect exception thrown" == nullptr ); }
+ 
+    CMatrix3<string> s ( 2, 1, 1 );
+    s[0][0][0] = "Hello ";
+    s[1][0][0] = "World!";
+    cout << s[0][0][0] + s[1][0][0] << endl;
+    assert ( ( s[0][0][0] + s[1][0][0] ) == string("Hello World!") );
+    /*
+    */
+ 
+    return EXIT_SUCCESS;
+}
+#endif /* __PROGTEST__ */
